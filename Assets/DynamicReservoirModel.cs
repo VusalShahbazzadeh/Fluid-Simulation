@@ -234,6 +234,18 @@ public class DynamicReservoirModel
             matrix[i, i] -= 1 / TimeStep;
         }
 
+        var a = "";
+        for (var x = 0; x < Grid.Num; x++)
+        {
+            for (var y = 0; y < Grid.Num; y++)
+            {
+                a += (int)Matrix[x, y] + "\t";
+            }
+
+            a += "\n";
+        }
+        Debug.Log(a);
+
         for (var i = 1; i < FrameCount; i++)
         {
             var b = new DenseVector(Grid.Num);

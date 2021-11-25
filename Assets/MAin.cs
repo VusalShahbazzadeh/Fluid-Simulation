@@ -16,10 +16,11 @@ public class MAin : MonoBehaviour
     private int kernel;
 
     private DateTime time;
+    private ComputeBuffer buffer;
 
     void Start()
     {
-        (int x, int y) Size = (10, 10);
+        (int x, int y) Size = (4, 4);
         var reservoir = new HomogenousReservoir(0.2f, new[] {100d, 100d, 100d});
         var fluids = new[]
         {
@@ -45,7 +46,7 @@ public class MAin : MonoBehaviour
         model.ImplementBorderConditions(1, new[] {1d, 0, 1000}, new[] {1d, 0, 1000});
 
         time = DateTime.Now;
-        model.ImplementWell(new[] {45}, new[] {-100d}, new[] {0d});
+        model.ImplementWell(new[] {8}, new[] {-100d}, new[] {0d});
         model.Solve();
         Debug.Log((DateTime.Now - time).TotalSeconds);
         Texture = new RenderTexture(model.Grid.GridNum[0], model.Grid.GridNum[1], 24);
@@ -70,7 +71,7 @@ public class MAin : MonoBehaviour
             return;
         var frame = currentFrame % model.FrameCount;
         frame += frame < 0 ? model.FrameCount : 0;
-        var buffer = new ComputeBuffer(model.Grid.Num, sizeof(double));
+        buffer = new ComputeBuffer(model.Grid.Num, sizeof(double));
         var result = new double[model.Grid.Num];
         var min = double.MaxValue;
         var max = 0d;
@@ -91,7 +92,7 @@ public class MAin : MonoBehaviour
         buffer.SetData(result);
         Shader.SetBuffer(kernel, "dataBuffer", buffer);
         Shader.Dispatch(kernel, model.Grid.GridNum[0], model.Grid.GridNum[1], 1);
-
+        buffer.Dispose();
 
         currentFrame++;
         lastTime = Time.time;
