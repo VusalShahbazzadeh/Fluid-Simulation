@@ -4,10 +4,13 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnityEngine;
 
+
 [CreateAssetMenu(order = 0, fileName = "new Dynamic Model", menuName = "Models/Dynamic")]
 public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackReceiver
 {
     public Cartesian Grid;
+    public ComputeShader ProcessDown;
+
     public Reservoir Reservoir;
     public Fluid[] Fluids;
     public double TimeStep;
@@ -228,7 +231,7 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
 
         // Inverse = matrix.Inverse();
         // Debug.Log(Inverse);
-        var inverser = new Inverser(matrix, Grid.GridNum[0] * Grid.GridNum[1]);
+        var inverser = new Inverser(matrix, Grid.GridNum[0] * Grid.GridNum[1],ProcessDown);
         Inverse = inverser.InverseMatrix();
         // Debug.Log(Inverse);
     }

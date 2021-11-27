@@ -18,14 +18,15 @@
       <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
     </file-type-list>
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/Assets/Shaders/Test/Compute/SparseMatrixInverse.cs" root0="FORCE_HIGHLIGHTING" />
-  </component>
   <component name="IdeDocumentHistory">
     <changedPaths>
       <option value="$PROJECT_DIR$/Assets/DynamicReservoirModel.cs" />
       <option value="$PROJECT_DIR$/Assets/MAin.cs" />
       <option value="$PROJECT_DIR$/Assets/Shaders/Test/Compute/SparseMatrixInverse.cs" />
+      <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/ProcessDown.compute" />
+      <option value="$PROJECT_DIR$/Assets/Scripts/Matrix/Inverser.cs" />
+      <option value="$PROJECT_DIR$/Assets/Scripts/DynamicReservoirModel.cs" />
+      <option value="$PROJECT_DIR$/Assets/Scripts/MAin.cs" />
     </changedPaths>
   </component>
   <component name="ProjectId" id="21PpJWqEpUO93Hz9Uxv0VsWRD1h" />
@@ -71,6 +72,7 @@
       <option name="presentableId" value="Default" />
       <updated>1637852508630</updated>
       <workItem from="1637852512425" duration="9519000" />
+      <workItem from="1638034660648" duration="3163000" />
     </task>
     <servers />
   </component>

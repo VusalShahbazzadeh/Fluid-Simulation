@@ -10,19 +10,22 @@ public class Inverser
 
     private int Num;
     private int Range;
+    private int FinRange;
 
     private ComputeShader ProcessDownShader;
-    private ComputeBuffer ProcessDownBuffer;
+    private ComputeBuffer ProcessDownBufferMatrix;
+    private ComputeBuffer ProcessDownBufferInverse;
 
-    public Inverser(Matrix<double> matrix, int range)
+    public Inverser(Matrix<double> matrix, int range, ComputeShader processDownShader)
     {
+        ProcessDownShader = processDownShader;
         Num = matrix.Storage.ColumnCount;
         Matrix = new double[Num * Num];
         Inverse = new double[Num * Num];
 
         for (var i = 0; i < Num; i++)
         {
-            Inverse[i* i*Num] = 1;
+            Inverse[i+ i*Num] = 1;
         }
         for (var x = 0; x < Num; x++)
         {
@@ -33,48 +36,67 @@ public class Inverser
         }
 
         Range = range;
+        FinRange = Range;
     }
 
     public Matrix<double> InverseMatrix()
     {
-        ProcessDownBuffer = new ComputeBuffer(Num*Num,sizeof(double));
-        ProcessDownBuffer.SetData(Matrix);
-        ProcessDownShader.SetBuffer(0,"");
+        ProcessDownBufferMatrix = new ComputeBuffer(Num*Num,sizeof(double));
+        ProcessDownBufferMatrix.SetData(Matrix);
+        ProcessDownShader.SetBuffer(0,"matrix_buffer",ProcessDownBufferMatrix);
+        ProcessDownBufferInverse = new ComputeBuffer(Num * Num, sizeof(double));
+        ProcessDownBufferInverse.SetData(Inverse);
+        ProcessDownShader.SetBuffer(0,"inverse", ProcessDownBufferInverse);
+        ProcessDownShader.SetInt("num",Num);
+
         Sort();
 
         for (var i = 0; i < Num; i++)
         {
             ProcessColumnDown(i);
         }
-        ProcessDownBuffer.Dispose();
 
         for (var i = Num - 1; i >= 0; i--)
         {
             ProcessColumnUp(i);
         }
+        
+        ProcessDownBufferMatrix.Dispose();
+        ProcessDownBufferInverse.Dispose();
 
         for (var i = 0; i < Num; i++)
         {
-            DivideRow(i, Matrix[i, i]);
+            DivideRow(i, Matrix[i+ i*Num]);
         }
 
-        return Inverse;
+        var result = new DenseMatrix(Num, Num);
+        
+        for (var row = 0; row < Num; row++)
+        {
+            for (var column = 0; column < Num; column++)
+            {
+                result[row, column] = Inverse[column + row * Num];
+            }
+        }
+
+        return result;
     }
 
     private void Sort()
     {
         for (var i = 0; i < Num; i++)
         {
-            if (Matrix[i, i] != 0)
+            if (Matrix[i+ i*Num] != 0)
             {
                 continue;
             }
 
             for (var j = 1; j <= Range; j++)
             {
-                if (Matrix[i, i + j] == 0)
+                if (Matrix[i+ (i + j)*Num] == 0)
                     continue;
-                SwitchRows(i, i + j);
+                SwitchRows(i, (i + j)*Num);
+                FinRange = Math.Max(FinRange, Range + j);
                 break;
             }
         }
@@ -116,12 +138,12 @@ public class Inverser
 
         for (int i = 0; i < Num; i++)
         {
-            res[i] = Matrix[i, row];
+            res[i] = Matrix[i+ row*Num];
         }
 
         for (var i = 0; i < Num; i++)
         {
-            res[i + Num] = Inverse[i, row];
+            res[i + Num] = Inverse[i +row*Num];
         }
 
         return res;
@@ -144,12 +166,12 @@ public class Inverser
     {
         for (int i = 0; i < Num; i++)
         {
-            Matrix[i, row] = data[i];
+            Matrix[i+ row*Num] = data[i];
         }
 
         for (var i = 0; i < Num; i++)
         {
-            Inverse[i, row] = data[i + Num];
+            Inverse[i+ row*Num] = data[i + Num];
         }
     }
 
@@ -158,15 +180,19 @@ public class Inverser
         var distanceToBottom = Num - 1 - column;
         var range = Math.Min(distanceToBottom, Range);
 
-        for (var i = 1; i <= range; i++)
-        {
-            if (Matrix[column, column + i] == 0)
-                continue;
+        ProcessDownShader.SetInt("column",column);
+        
+        ProcessDownShader.Dispatch(0,FinRange,1,1);
 
-            var _row = GetRow(column);
-            var _multiplied = Multiply(_row, Matrix[column, column + i] / Matrix[column, column]);
-            SubtractRow(column + i, _multiplied);
-        }
+        // for (var i = 1; i <= range; i++)
+        // {
+        //     if (Matrix[column+ (column + i)*Num] == 0)
+        //         continue;
+        //
+        //     var _row = GetRow(column);
+        //     var _multiplied = Multiply(_row, Matrix[column+ (column + i)*Num] / Matrix[column+ column*Num]);
+        //     SubtractRow(column + i, _multiplied);
+        // }
     }
 
     public void ProcessColumnUp(int column)
@@ -175,11 +201,11 @@ public class Inverser
         var range = Math.Min(distanceToTop, Range);
         for (var i = 1; i <= range; i++)
         {
-            if (Matrix[column, column - i] == 0)
+            if (Matrix[column+ (column - i)*Num] == 0)
                 continue;
 
             var _row = GetRow(column);
-            var _multiplied = Multiply(_row, Matrix[column, column - i] / Matrix[column, column]);
+            var _multiplied = Multiply(_row, Matrix[column+ (column - i)*Num] / Matrix[column+ column*Num]);
             SubtractRow(column - i, _multiplied);
         }
     }

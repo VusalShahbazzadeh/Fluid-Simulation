@@ -52,14 +52,15 @@ void SubtractRow(int row, double data[])
     SetRow(row, Result);
 }
 
-[numthreads(100,1,1)]
+[numthreads(1,1,1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
-    if (matrix_buffer[column + (column + id.x) * num] == 0)
+    auto val =matrix_buffer[column + (column + id.x) * num]; 
+    if (val == 0)
         return;
     GetRow(column);
-    Multiply(Row, matrix_buffer[column + (column + id.x) * num] / matrix_buffer[column + column * num]);
+    Multiply(Row, val / matrix_buffer[column + column * num]);
 
     SubtractRow(column + id.x, Multiplied);
 }
