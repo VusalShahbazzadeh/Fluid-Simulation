@@ -1,6 +1,7 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel MultiplyAndSubtractInverse
 #pragma kernel Normalize
+#pragma kernel ProcessUp
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
@@ -30,3 +31,14 @@ void MultiplyAndSubtractMatrix(uint3 id : SV_DispatchThreadID)
     matrix_buffer[id.x + (column + i) * num] -= matrix_buffer[id.x + column * num] * val;
 }
 
+[numthreads(1,1,1)]
+void ProcessUp(uint3 id : SV_DispatchThreadID)
+{
+    if (matrix_buffer[column + (column - (id.y+1)) * num] == 0)
+        return;;
+
+    float val = matrix_buffer[column + (column - (id.y+1)) * num] / matrix_buffer[column + column * num];
+
+
+    inverse[id.x + (column - (id.y+1)) * num] -= inverse[id.x + column * num] * val;
+}
