@@ -18,15 +18,22 @@
       <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
     </file-type-list>
   </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/9BAEBF9A-F865-4167-8FD1-5BFDBF5F26EB/2c/6e49a5e4/ComputeShader.cs" root0="SKIP_HIGHLIGHTING" />
+  </component>
   <component name="IdeDocumentHistory">
     <changedPaths>
       <option value="$PROJECT_DIR$/Assets/DynamicReservoirModel.cs" />
       <option value="$PROJECT_DIR$/Assets/MAin.cs" />
       <option value="$PROJECT_DIR$/Assets/Shaders/Test/Compute/SparseMatrixInverse.cs" />
-      <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/ProcessDown.compute" />
-      <option value="$PROJECT_DIR$/Assets/Scripts/Matrix/Inverser.cs" />
-      <option value="$PROJECT_DIR$/Assets/Scripts/DynamicReservoirModel.cs" />
       <option value="$PROJECT_DIR$/Assets/Scripts/MAin.cs" />
+      <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/ProcessDown.compute" />
+      <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/ProcessDown.compute" />
+      <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/Normalize.compute" />
+      <option value="$PROJECT_DIR$/Assets/Scripts/DynamicReservoirModel.cs" />
+      <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/MultiplyAndSubtract.compute" />
+      <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/MultiplyAndSubtractInverse.compute" />
+      <option value="$PROJECT_DIR$/Assets/Scripts/Matrix/Inverser.cs" />
     </changedPaths>
   </component>
   <component name="ProjectId" id="21PpJWqEpUO93Hz9Uxv0VsWRD1h" />
@@ -73,6 +80,7 @@
       <updated>1637852508630</updated>
       <workItem from="1637852512425" duration="9519000" />
       <workItem from="1638034660648" duration="3163000" />
+      <workItem from="1638191558286" duration="9494000" />
     </task>
     <servers />
   </component>

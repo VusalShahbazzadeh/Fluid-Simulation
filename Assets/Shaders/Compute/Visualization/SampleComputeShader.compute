@@ -1,5 +1,5 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel MultiplyAndSubtractInverse
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
@@ -9,7 +9,7 @@ RWStructuredBuffer<double> dataBuffer;
 int size_x;
 
 [numthreads(1,1,1)]
-void CSMain(uint3 id : SV_DispatchThreadID)
+void MultiplyAndSubtractInverse(uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
 
