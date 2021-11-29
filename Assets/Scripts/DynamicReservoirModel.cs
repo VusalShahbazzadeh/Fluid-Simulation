@@ -229,11 +229,11 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
             matrix[i, i] -= 1 / TimeStep;
         }
 
-        Inverse = matrix.Inverse();
-        Debug.Log(Inverse);
+        // Inverse = matrix.Inverse();
+        // Debug.Log(Inverse);
         var inverser = new Inverser(matrix, (Grid.GridNum[0] , Grid.GridNum[1], Grid.GridNum[2]));
         Inverse = inverser.InverseMatrix();
-        Debug.Log(Inverse);
+        // Debug.Log(Inverse);
     }
 
     public double[] Solve(double[] Pressure)

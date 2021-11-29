@@ -2,16 +2,19 @@
 #pragma kernel MultiplyAndSubtractInverse
 #pragma kernel Normalize
 #pragma kernel ProcessUp
+#pragma kernel ProcessDown
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 
 RWStructuredBuffer<double> inverse;
 RWStructuredBuffer<double> matrix_buffer;
+RWStructuredBuffer<double> buffer;
 int num;
 int column;
 int i;
 float val;
+int range;
 
 [numthreads(1,1,1)]
 void MultiplyAndSubtractInverse(uint3 id : SV_DispatchThreadID)
@@ -34,11 +37,39 @@ void MultiplyAndSubtractMatrix(uint3 id : SV_DispatchThreadID)
 [numthreads(1,1,1)]
 void ProcessUp(uint3 id : SV_DispatchThreadID)
 {
-    if (matrix_buffer[column + (column - (id.y+1)) * num] == 0)
+    if (matrix_buffer[column + (column - (id.y + 1)) * num] == 0)
         return;;
 
-    float val = matrix_buffer[column + (column - (id.y+1)) * num] / matrix_buffer[column + column * num];
+    float val = matrix_buffer[column + (column - (id.y + 1)) * num] / matrix_buffer[column + column * num];
 
 
-    inverse[id.x + (column - (id.y+1)) * num] -= inverse[id.x + column * num] * val;
+    inverse[id.x + (column - (id.y + 1)) * num] -= inverse[id.x + column * num] * val;
+}
+
+[numthreads(1,1,1)]
+void ProcessDown(uint3 id : SV_DispatchThreadID)
+{
+    if (matrix_buffer[column + (column + id.y + 1) * num] == 0)
+        return;
+
+    if (buffer[id.y] == 0)
+    {
+        buffer[id.y] = matrix_buffer[column + (column + id.y + 1) * num] /
+            matrix_buffer[column + column * num];
+    }
+    float Val = buffer[id.y];
+
+
+    matrix_buffer[id.x + (column + id.y + 1) * num] -= matrix_buffer[id.x + column * num] * Val;
+
+
+    // ProcessInverseLine.SetInt("i", i);
+    // ProcessInverseLine.SetFloat("val", (float) val);
+    // matrixBuffer.SetData(Matrix);
+    // inverseBuffer.SetData(Inverse);
+    // ProcessInverseLine.Dispatch(0, column + 1, 1, 1);
+    // matrixBuffer.GetData(Matrix);
+    // inverseBuffer.GetData(Inverse);
+
+    inverse[id.x + (column + id.y + 1) * num] -= inverse[id.x + column * num] * Val;
 }

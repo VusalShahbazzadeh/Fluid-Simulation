@@ -53,15 +53,17 @@ public class Inverser
         ProcessInverseLine.SetBuffer(0, "inverse", inverseBuffer);
         ProcessInverseLine.SetBuffer(1, "inverse", inverseBuffer);
         ProcessInverseLine.SetBuffer(2, "inverse", inverseBuffer);
+        ProcessInverseLine.SetBuffer(3, "inverse", inverseBuffer);
         ProcessInverseLine.SetBuffer(0, "matrix_buffer", matrixBuffer);
         ProcessInverseLine.SetBuffer(1, "matrix_buffer", matrixBuffer);
         ProcessInverseLine.SetBuffer(2, "matrix_buffer", matrixBuffer);
+        ProcessInverseLine.SetBuffer(3, "matrix_buffer", matrixBuffer);
         ProcessInverseLine.SetInt("num", Num);
     }
 
     public Matrix<double> InverseMatrix()
     {
-        for (var i = 0; i < Num; i++)
+        for (var i = 0; i < Num-1; i++)
         {
             ProcessColumnDown(i);
         }
@@ -81,19 +83,19 @@ public class Inverser
         //     }
         // }
         // Debug.Log(r);
-        inverseBuffer.SetData(Inverse);
-        matrixBuffer.SetData(Matrix);
-        ProcessInverseLine.Dispatch(1, Num, Num, 1);
-        inverseBuffer.GetData(Inverse);
-        matrixBuffer.GetData(Matrix);
+        // inverseBuffer.SetData(Inverse);
+        // matrixBuffer.SetData(Matrix);
+        // ProcessInverseLine.Dispatch(1, Num, Num, 1);
+        // inverseBuffer.GetData(Inverse);
+        // matrixBuffer.GetData(Matrix);
 
-        // for (var i = 0; i < Num; i++)
-        // {
-        //     for (var j = 0; j < Num; j++)
-        //     {
-        //         Inverse[j + i * Num] /= Matrix[i + i * Num];
-        //     }
-        // }
+        for (var i = 0; i < Num; i++)
+        {
+            for (var j = 0; j < Num; j++)
+            {
+                Inverse[j + i * Num] /= Matrix[i + i * Num];
+            }
+        }
 
 
         var result = new DenseMatrix(Num, Num);
@@ -119,22 +121,30 @@ public class Inverser
         var distanceToBottom = Num - 1 - column;
         var range = Math.Min(distanceToBottom, Range);
         ProcessInverseLine.SetInt("column", column);
+        ProcessInverseLine.SetInt("range", range);
 
+        var buffer= new ComputeBuffer(range, sizeof(double));
+        ProcessInverseLine.SetBuffer(3,"buffer",buffer);
+        
 
+        // matrixBuffer.SetData(Matrix);
+        // inverseBuffer.SetData(Inverse);
+        // ProcessInverseLine.Dispatch(3, column + 1, range, 1);
+        // matrixBuffer.GetData(Matrix);
+        // inverseBuffer.GetData(Inverse);
         for (var i = 1; i <= range; i++)
         {
             if (Matrix[column + (column + i) * Num] == 0)
                 continue;
-
+        
             var val = Matrix[column + (column + i) * Num] /
                       Matrix[column + column * Num];
-
-            for (var j = 0; j <= range; j++)
+        
+            for (var j = 1; j <= range; j++)
             {
                 Matrix[column + j + (column + i) * Num] -= Matrix[column + j + column * Num] * val;
             }
-
-
+        
             ProcessInverseLine.SetInt("i", i);
             ProcessInverseLine.SetFloat("val", (float) val);
             matrixBuffer.SetData(Matrix);
@@ -142,9 +152,11 @@ public class Inverser
             ProcessInverseLine.Dispatch(0, column + 1, 1, 1);
             matrixBuffer.GetData(Matrix);
             inverseBuffer.GetData(Inverse);
-
-            // for (var j = 0; j <= column; j++)
+        
+            // for (var j = 0; j < Num; j++)
             // {
+            //     Matrix[j + (column + i) * Num] -= Matrix[j + column * Num] * val;
+            //
             //     Inverse[j + (column + i) * Num] -= Inverse[j + column * Num] * val;
             // }
         }
@@ -161,32 +173,32 @@ public class Inverser
         var range = Math.Min(distanceToTop, Range);
         ProcessInverseLine.SetInt("column", column);
 
-        inverseBuffer.SetData(Inverse);
-        matrixBuffer.SetData(Matrix);
-        ProcessInverseLine.Dispatch(2,Num,range,1);
-        matrixBuffer.GetData(Matrix);
-        inverseBuffer.GetData(Inverse);
-        // for (var i = 1; i <= range; i++)
-        // {
-        //     if (Matrix[column + (column - i) * Num] == 0)
-        //         continue;
-        //
-        //     var val = Matrix[column + (column - i) * Num] / Matrix[column + column * Num];
-        //
-        //     ProcessInverseLine.SetInt("i", -i);
-        //
-        //     ProcessInverseLine.SetFloat("val", (float) val);
-        //     inverseBuffer.SetData(Inverse);
-        //     matrixBuffer.SetData(Matrix);
-        //     ProcessInverseLine.Dispatch(0, Num, 1, 1);
-        //     matrixBuffer.GetData(Matrix);
-        //     inverseBuffer.GetData(Inverse);
-        //
-        //
-        //     // for (var j = 0; j < Num; j++)
-        //     // {
-        //     //     Inverse[j + (column - i) * Num] -= Inverse[j + column * Num] * val;
-        //     // }
-        // }
+        // inverseBuffer.SetData(Inverse);
+        // matrixBuffer.SetData(Matrix);
+        // ProcessInverseLine.Dispatch(2, Num, range, 1);
+        // matrixBuffer.GetData(Matrix);
+        // inverseBuffer.GetData(Inverse);
+        for (var i = 1; i <= range; i++)
+        {
+            if (Matrix[column + (column - i) * Num] == 0)
+                continue;
+
+            var val = Matrix[column + (column - i) * Num] / Matrix[column + column * Num];
+
+            ProcessInverseLine.SetInt("i", -i);
+
+            // ProcessInverseLine.SetFloat("val", (float) val);
+            // inverseBuffer.SetData(Inverse);
+            // matrixBuffer.SetData(Matrix);
+            // ProcessInverseLine.Dispatch(0, Num, 1, 1);
+            // matrixBuffer.GetData(Matrix);
+            // inverseBuffer.GetData(Inverse);
+
+
+            for (var j = 0; j < Num; j++)
+            {
+                Inverse[j + (column - i) * Num] -= Inverse[j + column * Num] * val;
+            }
+        }
     }
 }
