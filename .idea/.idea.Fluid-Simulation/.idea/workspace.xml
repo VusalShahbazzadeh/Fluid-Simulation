@@ -31,10 +31,10 @@
       <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/ProcessDown.compute" />
       <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/ProcessDown.compute" />
       <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/Normalize.compute" />
-      <option value="$PROJECT_DIR$/Assets/Scripts/DynamicReservoirModel.cs" />
       <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/MultiplyAndSubtract.compute" />
       <option value="$PROJECT_DIR$/Assets/Shaders/Compute/Matrix/Resources/MultiplyAndSubtractInverse.compute" />
       <option value="$PROJECT_DIR$/Assets/Scripts/Matrix/Inverser.cs" />
+      <option value="$PROJECT_DIR$/Assets/Scripts/DynamicReservoirModel.cs" />
     </changedPaths>
   </component>
   <component name="ProjectId" id="21PpJWqEpUO93Hz9Uxv0VsWRD1h" />
