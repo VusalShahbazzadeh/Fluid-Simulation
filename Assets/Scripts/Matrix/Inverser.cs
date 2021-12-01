@@ -82,13 +82,6 @@ public class Inverser
     {
         var distanceToBottom = Num - 1 - column;
         var range = Math.Min(distanceToBottom, Range);
-        // var res = "";
-        // for (int i = 0; i < range; i++)
-        // {
-        //     if (Matrix[column + (column + i + 1) * Num] == 0)
-        //         res += i + "\t";
-        // }
-        // Debug.Log(res);
         ProcessInverseLine.SetInt("column", column);
         ProcessInverseLine.SetInt("range",range);
         ProcessInverseLine.Dispatch(3, range, 1, 1);
@@ -100,6 +93,7 @@ public class Inverser
         var distanceToTop = column;
         var range = Math.Min(distanceToTop, Range);
         ProcessInverseLine.SetInt("column", column);
+        ProcessInverseLine.Dispatch(3, range, 1, 1);
         ProcessInverseLine.Dispatch(1, Num, range, 1);
     }
 }

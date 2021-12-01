@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnityEngine;
@@ -46,11 +47,11 @@ public class DynamicReservoirModel : ScriptableObject
             {
                 for (var i = 0; i < Grid.Num; i++)
                 {
-                    var n = Grid.Ids[dim * 2 + dir + 1][i];
-                    var d = (Grid.Size[dim][i] + Grid.Size[dim][n]) / 2;
+                    var n = Grid.Ids[dim * 2 + dir + 1 + i * 7];
+                    var d = (Grid.Size[dim + i * 3] + Grid.Size[dim + n * 3]) / 2;
                     delta[i, dim * 2 + dir] = d;
-                    var k = 2 * d / (Grid.Size[dim][i] / Reservoir.GetPermeability(i, dim) +
-                                     Grid.Size[dim][n] / Reservoir.GetPermeability(n, dim));
+                    var k = 2 * d / (Grid.Size[dim + i * 3] / Reservoir.GetPermeability(i, dim) +
+                                     Grid.Size[dim + n * 3] / Reservoir.GetPermeability(n, dim));
 
                     Eta[i, dim * 2 + dir] =
                         k / Reservoir.GetPorosity(i) / Fluids[0].Viscosity / Fluids[0].Compressibility;
@@ -114,7 +115,7 @@ public class DynamicReservoirModel : ScriptableObject
                         if (pos[dim] != 0)
                         {
                             noBorderMin[indexMin] = i;
-                            noBorderNeighborMin[indexMin] = Grid.Ids[dim * 2 + 1][i];
+                            noBorderNeighborMin[indexMin] = Grid.Ids[dim * 2 + 1 + i * 7];
                             matrixValuesMin[indexMin] = Transmissibility[i + (dim * 2) * Grid.Num];
                             indexMin++;
                         }
@@ -122,7 +123,7 @@ public class DynamicReservoirModel : ScriptableObject
                         if (pos[dim] != Grid.GridNum[dim] - 1)
                         {
                             noBorderMax[indexMax] = i;
-                            noBorderNeighborMax[indexMax] = Grid.Ids[dim * 2 + 2][i];
+                            noBorderNeighborMax[indexMax] = Grid.Ids[dim * 2 + 2 + i * 7];
                             matrixValuesMax[indexMax] = Transmissibility[i + (dim * 2 + 1) * Grid.Num];
                             indexMax++;
                         }
@@ -132,11 +133,11 @@ public class DynamicReservoirModel : ScriptableObject
 
             for (var i = 0; i < count; i++)
             {
-                Matrix[noBorderMin[i]+ noBorderNeighborMin[i]*Grid.Num] += matrixValuesMin[i];
-                Matrix[noBorderMin[i]+ noBorderMin[i]*Grid.Num] -= matrixValuesMin[i];
+                Matrix[noBorderMin[i] + noBorderNeighborMin[i] * Grid.Num] += matrixValuesMin[i];
+                Matrix[noBorderMin[i] + noBorderMin[i] * Grid.Num] -= matrixValuesMin[i];
 
-                Matrix[noBorderMax[i]+ noBorderNeighborMax[i]*Grid.Num] += matrixValuesMax[i];
-                Matrix[noBorderMax[i]+ noBorderMax[i]*Grid.Num] -= matrixValuesMax[i];
+                Matrix[noBorderMax[i] + noBorderNeighborMax[i] * Grid.Num] += matrixValuesMax[i];
+                Matrix[noBorderMax[i] + noBorderMax[i] * Grid.Num] -= matrixValuesMax[i];
             }
         }
 
@@ -186,8 +187,8 @@ public class DynamicReservoirModel : ScriptableObject
                           +
                           (Grid.GridNum[dim] - 1) * p;
 
-                var dMin = Grid.Size[dim][min];
-                var dMax = Grid.Size[dim][max];
+                var dMin = Grid.Size[dim + min * 3];
+                var dMax = Grid.Size[dim + max * 3];
 
                 var tMin = Transmissibility[min + (2 * dim) * Grid.Num];
                 var tMax = Transmissibility[max + (2 * dim + 1) * Grid.Num];
@@ -195,8 +196,8 @@ public class DynamicReservoirModel : ScriptableObject
                 var bcMin = 2 * tMin * dMin / (bMin[0] * dMin - 2 * bMin[1]);
                 var bcMax = 2 * tMax * dMax / (bMax[0] * dMax + 2 * bMax[1]);
 
-                Matrix[min+ min*Grid.Num] -= bcMin * bMin[0];
-                Matrix[max+ max*Grid.Num] -= bcMax * bMax[0];
+                Matrix[min + min * Grid.Num] -= bcMin * bMin[0];
+                Matrix[max + max * Grid.Num] -= bcMax * bMax[0];
 
                 Vector[min] -= bcMin * bMin[2];
                 Vector[max] -= bcMax * bMax[2];
@@ -213,7 +214,7 @@ public class DynamicReservoirModel : ScriptableObject
         for (var i = 0; i < ids.Length; i++)
         {
             Vector[ids[i]] += productivityIndexes[i] * bottomHolePressure[i];
-            Matrix[ids[i]+ ids[i]*Grid.Num] += productivityIndexes[i];
+            Matrix[ids[i] + ids[i] * Grid.Num] += productivityIndexes[i];
         }
     }
 
@@ -224,10 +225,12 @@ public class DynamicReservoirModel : ScriptableObject
         ImplementBorderConditions(0, BMinX, BMaxX);
         ImplementBorderConditions(1, BMinY, BMaxY);
         ImplementBorderConditions(2, BMinZ, BMaxZ);
+        ImplementWell(Wells.Select(x => x.Id).ToArray(), Wells.Select(x => x.ProductivityIndex).ToArray(),
+            Wells.Select(x => x.BottomHolePressure).ToArray());
 
         for (var i = 0; i < Grid.Num; i++)
         {
-            Matrix[i+ i*Grid.Num] -= 1 / TimeStep;
+            Matrix[i + i * Grid.Num] -= 1 / TimeStep;
         }
 
         // var matrix = new DenseMatrix(Grid.Num, Grid.Num, Matrix);
@@ -241,13 +244,12 @@ public class DynamicReservoirModel : ScriptableObject
     public double[] Solve(double[] Pressure)
     {
         var b = new double[Grid.Num];
-        Debug.Log(Vector.Length);
         for (var id = 0; id < Grid.Num; id++)
         {
             b[id] = -Pressure[id] / TimeStep + Vector[id];
         }
 
-        var res = Multiply(Inverse,b);
+        var res = Multiply(Inverse, b);
 
 
         return res;
@@ -260,7 +262,7 @@ public class DynamicReservoirModel : ScriptableObject
         {
             for (var j = 0; j < vector.Length; j++)
             {
-                result[i]  += vector[j] * matrix[j + i * vector.Length];
+                result[i] += vector[j] * matrix[j + i * vector.Length];
             }
         }
 
@@ -274,6 +276,4 @@ public class DynamicReservoirModel : ScriptableObject
         public double ProductivityIndex;
         public double BottomHolePressure;
     }
-    
-    
 }
