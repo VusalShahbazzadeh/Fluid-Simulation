@@ -230,16 +230,18 @@ public class DynamicReservoirModel : ScriptableObject
             Matrix[i+ i*Grid.Num] -= 1 / TimeStep;
         }
 
-        // Inverse = matrix.Inverse();
-        // Debug.Log(Inverse);
+        // var matrix = new DenseMatrix(Grid.Num, Grid.Num, Matrix);
+        // var inverse = matrix.Inverse();
+        // Debug.Log(inverse);
         var inverser = new Inverser(Matrix, (Grid.GridNum[0], Grid.GridNum[1], Grid.GridNum[2]));
         Inverse = inverser.InverseMatrix();
-        // Debug.Log(Inverse);
+        // Debug.Log(new DenseMatrix(Grid.Num,Grid.Num,Inverse));
     }
 
     public double[] Solve(double[] Pressure)
     {
         var b = new double[Grid.Num];
+        Debug.Log(Vector.Length);
         for (var id = 0; id < Grid.Num; id++)
         {
             b[id] = -Pressure[id] / TimeStep + Vector[id];
