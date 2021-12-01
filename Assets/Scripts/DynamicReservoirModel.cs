@@ -6,7 +6,7 @@ using UnityEngine;
 
 
 [CreateAssetMenu(order = 0, fileName = "new Dynamic Model", menuName = "Models/Dynamic")]
-public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackReceiver
+public class DynamicReservoirModel : ScriptableObject
 {
     public Cartesian Grid;
     public ComputeShader ProcessDown;
@@ -25,15 +25,18 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
     public WellGrid[] Wells;
 
 
-    public double[,] Transmissibility { get; private set; }
-    public SparseMatrix Matrix { get; private set; }
-    public double[] Vector { get; private set; }
-    public Matrix<double> Inverse { get; private set; }
-    public Array1DDouble[] Inverse_dat;
+    public double[] Transmissibility;
+
+    // public double[,] Transmissibility { get; private set; }
+    public double[] Matrix;
+
+    // public SparseMatrix Matrix { get; private set; }
+    public double[] Vector;
+    public double[] Inverse;
 
     private void SetTransmissibility()
     {
-        Transmissibility = new double[Grid.Num, 6];
+        Transmissibility = new double[Grid.Num * 6];
 
         var delta = new double[Grid.Num, 6];
         var Eta = new double[Grid.Num, 6];
@@ -61,10 +64,10 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
             {
                 for (var i = 0; i < Grid.Num; i++)
                 {
-                    Transmissibility[i, dim * 2 + dir] = (2 * Eta[i, dim * 2 + dir])
-                                                         /
-                                                         (delta[i, dim * 2 + dir] *
-                                                          (delta[i, dim * 2] + delta[i, dim * 2 + 1]));
+                    Transmissibility[i + (dim * 2 + dir) * Grid.Num] = (2 * Eta[i, dim * 2 + dir])
+                                                                       /
+                                                                       (delta[i, dim * 2 + dir] *
+                                                                        (delta[i, dim * 2] + delta[i, dim * 2 + 1]));
                 }
             }
         }
@@ -72,8 +75,8 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
 
     private void BuildMatrix()
     {
-        Matrix = new SparseMatrix(Grid.Num, Grid.Num);
-
+        // Matrix = new SparseMatrix(Grid.Num, Grid.Num);
+        Matrix = new double[Grid.Num * Grid.Num];
         for (var dim = 0; dim < 3; dim++)
         {
             var count =
@@ -112,7 +115,7 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
                         {
                             noBorderMin[indexMin] = i;
                             noBorderNeighborMin[indexMin] = Grid.Ids[dim * 2 + 1][i];
-                            matrixValuesMin[indexMin] = Transmissibility[i, dim * 2];
+                            matrixValuesMin[indexMin] = Transmissibility[i + (dim * 2) * Grid.Num];
                             indexMin++;
                         }
 
@@ -120,7 +123,7 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
                         {
                             noBorderMax[indexMax] = i;
                             noBorderNeighborMax[indexMax] = Grid.Ids[dim * 2 + 2][i];
-                            matrixValuesMax[indexMax] = Transmissibility[i, dim * 2 + 1];
+                            matrixValuesMax[indexMax] = Transmissibility[i + (dim * 2 + 1) * Grid.Num];
                             indexMax++;
                         }
                     }
@@ -129,11 +132,11 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
 
             for (var i = 0; i < count; i++)
             {
-                Matrix[noBorderMin[i], noBorderNeighborMin[i]] += matrixValuesMin[i];
-                Matrix[noBorderMin[i], noBorderMin[i]] -= matrixValuesMin[i];
+                Matrix[noBorderMin[i]+ noBorderNeighborMin[i]*Grid.Num] += matrixValuesMin[i];
+                Matrix[noBorderMin[i]+ noBorderMin[i]*Grid.Num] -= matrixValuesMin[i];
 
-                Matrix[noBorderMax[i], noBorderNeighborMax[i]] += matrixValuesMax[i];
-                Matrix[noBorderMax[i], noBorderMax[i]] -= matrixValuesMax[i];
+                Matrix[noBorderMax[i]+ noBorderNeighborMax[i]*Grid.Num] += matrixValuesMax[i];
+                Matrix[noBorderMax[i]+ noBorderMax[i]*Grid.Num] -= matrixValuesMax[i];
             }
         }
 
@@ -186,14 +189,14 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
                 var dMin = Grid.Size[dim][min];
                 var dMax = Grid.Size[dim][max];
 
-                var tMin = Transmissibility[min, 2 * dim];
-                var tMax = Transmissibility[max, 2 * dim + 1];
+                var tMin = Transmissibility[min + (2 * dim) * Grid.Num];
+                var tMax = Transmissibility[max + (2 * dim + 1) * Grid.Num];
 
                 var bcMin = 2 * tMin * dMin / (bMin[0] * dMin - 2 * bMin[1]);
                 var bcMax = 2 * tMax * dMax / (bMax[0] * dMax + 2 * bMax[1]);
 
-                Matrix[min, min] -= bcMin * bMin[0];
-                Matrix[max, max] -= bcMax * bMax[0];
+                Matrix[min+ min*Grid.Num] -= bcMin * bMin[0];
+                Matrix[max+ max*Grid.Num] -= bcMax * bMax[0];
 
                 Vector[min] -= bcMin * bMin[2];
                 Vector[max] -= bcMax * bMax[2];
@@ -210,7 +213,7 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
         for (var i = 0; i < ids.Length; i++)
         {
             Vector[ids[i]] += productivityIndexes[i] * bottomHolePressure[i];
-            Matrix[ids[i], ids[i]] += productivityIndexes[i];
+            Matrix[ids[i]+ ids[i]*Grid.Num] += productivityIndexes[i];
         }
     }
 
@@ -222,32 +225,44 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
         ImplementBorderConditions(1, BMinY, BMaxY);
         ImplementBorderConditions(2, BMinZ, BMaxZ);
 
-        var matrix = new SparseMatrix(Grid.Num, Grid.Num);
-        Matrix.CopyTo(matrix);
         for (var i = 0; i < Grid.Num; i++)
         {
-            matrix[i, i] -= 1 / TimeStep;
+            Matrix[i+ i*Grid.Num] -= 1 / TimeStep;
         }
 
         // Inverse = matrix.Inverse();
         // Debug.Log(Inverse);
-        var inverser = new Inverser(matrix, (Grid.GridNum[0] , Grid.GridNum[1], Grid.GridNum[2]));
+        var inverser = new Inverser(Matrix, (Grid.GridNum[0], Grid.GridNum[1], Grid.GridNum[2]));
         Inverse = inverser.InverseMatrix();
         // Debug.Log(Inverse);
     }
 
     public double[] Solve(double[] Pressure)
     {
-        var b = new DenseVector(Grid.Num);
+        var b = new double[Grid.Num];
         for (var id = 0; id < Grid.Num; id++)
         {
             b[id] = -Pressure[id] / TimeStep + Vector[id];
         }
 
-        var res = Inverse.Multiply(b);
+        var res = Multiply(Inverse,b);
 
 
-        return res.AsArray();
+        return res;
+    }
+
+    public double[] Multiply(double[] matrix, double[] vector)
+    {
+        var result = new double[vector.Length];
+        for (var i = 0; i < vector.Length; i++)
+        {
+            for (var j = 0; j < vector.Length; j++)
+            {
+                result[i]  += vector[j] * matrix[j + i * vector.Length];
+            }
+        }
+
+        return result;
     }
 
     [System.Serializable]
@@ -257,36 +272,6 @@ public class DynamicReservoirModel : ScriptableObject, ISerializationCallbackRec
         public double ProductivityIndex;
         public double BottomHolePressure;
     }
-
-    public void OnBeforeSerialize()
-    {
-        try
-        {
-            Inverse_dat = new Array1DDouble[Grid.Num];
-            for (var x = 0; x < Grid.Num; x++)
-            {
-                Inverse_dat[x] = new Array1DDouble(Grid.Num);
-                for (var y = 0; y < Grid.Num; y++)
-                {
-                    Inverse_dat[x][y] = Inverse[x, y];
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Inverse Data deleted please prepare model again");
-        }
-    }
-
-    public void OnAfterDeserialize()
-    {
-        Inverse = new DenseMatrix(Grid.Num, Grid.Num);
-        for (var x = 0; x < Grid.Num; x++)
-        {
-            for (var y = 0; y < Grid.Num; y++)
-            {
-                Inverse[x, y] = Inverse_dat[x][y];
-            }
-        }
-    }
+    
+    
 }
